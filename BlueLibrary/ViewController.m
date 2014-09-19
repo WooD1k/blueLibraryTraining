@@ -9,15 +9,17 @@
 #import "ViewController.h"
 #import "LibraryAPI.h"
 #import "Album+TableRepresentation.h"
+#import "HorizontalScroller.h"
 #import "AlbumView.h"
 #import "Album.h"
 
-@interface ViewController () <UITableViewDataSource, UITableViewDelegate>
+@interface ViewController () <UITableViewDataSource, UITableViewDelegate, HorizontalScrollerDelegate>
 
 {
 	UITableView * dataTable;
 	NSArray * allAlbums;
 	NSDictionary * currentAlbumData;
+	HorizontalScroller * scroller;
 	int currentAlbumIndex;
 }
 
@@ -44,6 +46,13 @@
 	dataTable.dataSource = self;
 	dataTable.backgroundView = nil;
 	[self.view addSubview:dataTable];
+	
+	scroller = [[HorizontalScroller alloc] initWithFrame:CGRectMake(0.f, 20.f, self.view.frame.size.width, 120.f)];
+	scroller.backgroundColor = [UIColor colorWithRed:0.24f green:0.35f blue:0.49f alpha:1];
+	scroller.delegate = self;
+	[self.view addSubview:scroller];
+	
+	[self reloadScroller];
 	
 	[self showDataForAlbumAtIndex:currentAlbumIndex];
 }
@@ -91,6 +100,35 @@
 	
 	// У нас есть данные, которые нам нужны. Обновляем TableView
 	[dataTable reloadData];
+}
+
+- (void)horizontalScroller:(HorizontalScroller *)scroller clickedViewAtIndex:(int)index
+{
+	currentAlbumIndex = index;
+	[self showDataForAlbumAtIndex:index];
+}
+
+- (NSInteger)numberOfViewsForHorizontalScroller:(HorizontalScroller *)scroller
+{
+	return allAlbums.count;
+}
+
+- (UIView *)horizontalScroller:(HorizontalScroller *)scroller viewAtIndex:(int)index
+{
+	Album * album = allAlbums[index];
+	return [[AlbumView alloc] initWithFrame:CGRectMake(0.f, 0.f, 100.f, 100.f) albumCover:album.coverUrl];
+}
+
+- (void)reloadScroller
+{
+	allAlbums = [[LibraryAPI sharedInstance] getAlbums];
+	if (currentAlbumIndex < 0)
+		currentAlbumIndex = 0;
+	else if (currentAlbumIndex >= allAlbums.count)
+		currentAlbumIndex = allAlbums.count - 1;
+	[scroller reload];
+	
+	[self showDataForAlbumAtIndex:currentAlbumIndex];
 }
 
 @end
